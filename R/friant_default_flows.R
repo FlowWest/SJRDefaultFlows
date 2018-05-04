@@ -35,8 +35,8 @@ get_restoration_AF <- function(unimpaired_inflow, allocation) {
 
 get_additional_allocation <- function(allocation, year_type) {
 
-  days <- SJRDefaultFlows::exhibitB_flow_lookup$`# Days`
-  flow_schedule_cfs <- SJRDefaultFlows::exhibitB_flow_lookup[year_type]
+  days <- SJRDefaultFlows::friant_exhibitB_flow_lookup$`# Days`
+  flow_schedule_cfs <- SJRDefaultFlows::friant_exhibitB_flow_lookup[year_type]
   total_acre_feet <- sum(flow_schedule_cfs * (60 * 60 * 24 * days) / 43560)
 
   return(allocation * 1000 - total_acre_feet)
@@ -87,3 +87,93 @@ get_friant_default_schedule <- function(year_type, addition_allocation, capped =
   return(schedule_cfs)
 
 }
+
+get_gravelly_ford_flows <- function(year_type, friant_flows) {
+
+  if(year_type %in% c('Wet', 'N-W', 'N-D', 'Dry')) {
+    return(friant_flows - SJRDefaultFlows::exhibitB_diversions_lookup$divers_R1)
+  } else {
+    return(friant_flows - SJRDefaultFlows::exhibitB_diversions_lookup$divers_R1_crit_yrs)
+  }
+}
+
+get_R2_losses <- function(gravelly_ford_flows) {
+  get_R2_loss <- function(gravelly_ford_flow){
+    loss_index <- which.min(abs(SJRDefaultFlows::R2_losses_lookup$flow - gravelly_ford_flow))
+    if(SJRDefaultFlows::R2_losses_lookup$flow[loss_index] > gravelly_ford_flow) {loss_index = loss_index - 1}
+    return(SJRDefaultFlows::R2_losses_lookup$r2_losses[loss_index])
+  }
+  return(sapply(gravelly_ford_flows, get_R2_loss))
+}
+
+get_mendota_dam_flows <- function(gravelly_ford_flows, gravelly_ford_losses) {
+  return(gravelly_ford_flows - gravelly_ford_losses)
+}
+
+get_confluence_flows <- function(year_type, mendota_dam_flows) {
+  if(year_type %in% c('Wet', 'N-W', 'N-D', 'Dry')) {
+    return(mendota_dam_flows + SJRDefaultFlows::exhibitB_diversions_lookup$mud_ss_gains)
+  } else {
+    return(mendota_dam_flows + SJRDefaultFlows::exhibitB_diversions_lookup$mud_ss_gains_crit_yrs)
+  }
+}
+
+unimpaired_inflow <- 1270 # cell D3
+
+get_default_flow_schedule <- function(unimpaired_inflow) {
+  allocation_lookup <- get_allocation_lookup(unimpaired_inflow)
+  allocation <- get_allocation(unimpaired_inflow, allocation_lookup) # cell C4
+  year_type <- get_year_type(allocation) # cell C5
+  restoration_af <- get_restoration_AF(unimpaired_inflow, allocation) # cell E5
+  addition_allocation <- get_additional_allocation(allocation, year_type) #cell K3
+  number_of_days <- get_number_of_days(year_type) # cell I4
+  friant_flows <- get_friant_default_schedule(year_type, addition_allocation)
+  gravelly_ford_flows <- get_gravelly_ford_flows(year_type, friant_flows)
+  gravelly_ford_losses <- get_R2_losses(gravelly_ford_flows)
+  mendota_dam_flows <- get_mendota_dam_flows(gravelly_ford_flows, gravelly_ford_losses)
+  confluence_flows <- get_confluence_flows(year_type, mendota_dam_flows)
+
+  flows <- data.frame(
+    period = SJRDefaultFlows::number_of_days_lookup$Period,
+    days = SJRDefaultFlows::number_of_days_lookup$`# Days`,
+    friant_release = friant_flows,
+    gravelly_ford_target = gravelly_ford_flows,
+    SJRRP_flows_at_gravelly_ford = gravelly_ford_flows - 5,
+    mendota_dam = mendota_dam_flows,
+    confluence = confluence_flows, stringsAsFactors = FALSE)
+
+}
+
+# default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
+# dd %>%
+#   tidyr::separate(period, into = c('start', 'end'),' - ')
+#
+# get_daily_default_flow_schedule <- function(default_flow_schedule){
+#
+#   period <- SJRDefaultFlows::friant_exhibitB_flow_lookup$Period
+#   days <- SJRDefaultFlows::friant_exhibitB_flow_lookup$`# Days`
+#   start_month_days <- unlist(strsplit(period, ' - '))[c(TRUE, FALSE)]
+#   start_month_days[7] <- 'Sep 1'
+#   year <- 2000
+#   start_dates <- as.Date(paste(year, start_month_days), format = '%Y %b %d')
+#
+#   # daily_default_flow_schedule <- data.frame(date = NULL, period = NULL)
+#   for (i in 1:12) {
+#     if (i == 1){
+#       daily_default_flow_schedule <- data.frame(
+#         date = seq(start_dates[i], length = days[i], by = 'day'),
+#         period = rep(period[i], days[i])
+#       )
+#     } else {
+#       temp <- data.frame(
+#         date = seq(start_dates[i], length = days[i], by = 'day'),
+#         period = rep(period[i], days[i]))
+#       daily_default_flow_schedule <- rbind(daily_default_flow_schedule, temp)
+#     }
+#
+#   }
+# }
+
+
+
+library(lubridate)

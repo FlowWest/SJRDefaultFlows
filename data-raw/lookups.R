@@ -31,34 +31,8 @@ exhibitB_diversions_lookup <- read_excel('data-raw/31GammaFlow_Schedule_Checkv5.
 
 use_data(exhibitB_diversions_lookup, overwrite = TRUE)
 
-get_gravelly_ford_flows <- function(year_type) {
-
-  friant_flows_exB <- SJRDefaultFlows::friant_exhibitB_flow_lookup[[year_type]]
-
-  if(year_type %in% c('Wet', 'N-W', 'N-D', 'Dry')) {
-    return(friant_flows_exB - SJRDefaultFlows::exhibitB_diversions_lookup$divers_R1)
-  } else {
-    return(friant_flows_exB - SJRDefaultFlows::exhibitB_diversions_lookup$divers_R1_crit_yrs)
-  }
-}
-
-get_R2_losses <- function(gravelly_ford_flows) {
-  get_R2_loss <- function(gravelly_ford_flow){
-    loss_index <- which.min(abs(SJRDefaultFlows::R2_losses_lookup$flow - gravelly_ford_flow))
-    if(SJRDefaultFlows::R2_losses_lookup$flow[loss_index] > gravelly_ford_flow) {loss_index = loss_index - 1}
-    return(SJRDefaultFlows::R2_losses_lookup$r2_losses[loss_index])
-  }
-  return(sapply(gravelly_ford_flows, get_R2_loss))
-}
-
-get_mendota_dam_flows <- function(gravelly_ford_flows, gravelly_ford_losses) {
-  return(gravelly_ford_flows - gravelly_ford_losses)
-}
-
-gravelly_ford_flows <- get_gravelly_ford_flows(year_type)
-gravelly_ford_losses <- get_R2_losses(gravelly_ford_flows)
-get_mendota_dam_flows(gravelly_ford_flows, gravelly_ford_losses)
-
 R2_losses_lookup <- read_excel('data-raw/31GammaFlow_Schedule_Checkv5.xlsx',
-                       sheet = 'R2 Losses.LUP', range = 'A2:B10', col_names = c('flow', 'r2_losses'))
+                               sheet = 'R2 Losses.LUP', range = 'A2:B10', col_names = c('flow', 'r2_losses'))
 use_data(R2_losses_lookup, overwrite = TRUE)
+
+
