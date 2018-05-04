@@ -144,36 +144,33 @@ get_default_flow_schedule <- function(unimpaired_inflow) {
 
 }
 
-# default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
-# dd %>%
-#   tidyr::separate(period, into = c('start', 'end'),' - ')
-#
-# get_daily_default_flow_schedule <- function(default_flow_schedule){
-#
-#   period <- SJRDefaultFlows::friant_exhibitB_flow_lookup$Period
-#   days <- SJRDefaultFlows::friant_exhibitB_flow_lookup$`# Days`
-#   start_month_days <- unlist(strsplit(period, ' - '))[c(TRUE, FALSE)]
-#   start_month_days[7] <- 'Sep 1'
-#   year <- 2000
-#   start_dates <- as.Date(paste(year, start_month_days), format = '%Y %b %d')
-#
-#   # daily_default_flow_schedule <- data.frame(date = NULL, period = NULL)
-#   for (i in 1:12) {
-#     if (i == 1){
-#       daily_default_flow_schedule <- data.frame(
-#         date = seq(start_dates[i], length = days[i], by = 'day'),
-#         period = rep(period[i], days[i])
-#       )
-#     } else {
-#       temp <- data.frame(
-#         date = seq(start_dates[i], length = days[i], by = 'day'),
-#         period = rep(period[i], days[i]))
-#       daily_default_flow_schedule <- rbind(daily_default_flow_schedule, temp)
-#     }
-#
-#   }
-# }
+get_daily_default_flow_schedule <- function(default_flow_schedule, year){
 
+  period <- default_flow_schedule$period
+  days <- default_flow_schedule$days
+  friant_release <- default_flow_schedule$friant_release
+  gravelly_ford_target <- default_flow_schedule$gravelly_ford_target
+  SJRRP_flows_at_gravelly_ford <- default_flow_schedule$SJRRP_flows_at_gravelly_ford
+  mendota_dam <- default_flow_schedule$mendota_dam
+  confluence <- default_flow_schedule$confluence
+  start_month_days <- unlist(strsplit(period, ' - '))[c(TRUE, FALSE)]
+  start_month_days[7] <- 'Sep 1'
+  year <- year
+  start_dates <- as.Date(paste(year, start_month_days), format = '%Y %b %d')
 
+  daily_default_flow_schedule <- data.frame()
 
-library(lubridate)
+  for (i in 1:12) {
+    temp <- data.frame(
+      date = seq(start_dates[i], length = days[i], by = 'day'),
+      period = rep(period[i], days[i]),
+      friant_release = rep(friant_release[i], days[i]),
+      gravelly_ford_target = rep(gravelly_ford_target[i], days[i]),
+      SJRRP_flows_at_gravelly_ford = rep(SJRRP_flows_at_gravelly_ford[i], days[i]),
+      mendota_dam = rep(mendota_dam[i], days[i]),
+      confluence = rep(confluence[i], days[i]))
+
+    daily_default_flow_schedule <- rbind(daily_default_flow_schedule, temp)
+    }
+}
+

@@ -12,6 +12,6 @@ gravelly_ford_flows <- get_gravelly_ford_flows(year_type, friant_flows)
 gravelly_ford_losses <- get_R2_losses(gravelly_ford_flows)
 mendota_dam_flows <- get_mendota_dam_flows(gravelly_ford_flows, gravelly_ford_losses)
 confluence_flows <- get_confluence_flows(year_type, mendota_dam_flows)
+default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
+daily_default_flow_schedule <- get_daily_default_flow_schedule(default_flow_schedule, year = 2000)
 
-
-cbind(SJRDefaultFlows::exhibitB_diversions_lookup$period, friant_flows,gravelly_ford_flows, mendota_dam_flows,confluence_flows)
