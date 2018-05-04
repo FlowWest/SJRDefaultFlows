@@ -52,21 +52,26 @@ get_number_of_days <- function(year_type) {
   return(days)
 }
 
+get_friant_flows_exhibitB <- function(year_type) {
+  exhibitB_flows <- SJRDefaultFlows::friant_exhibitB_flow_lookup[[year_type]]
+  return(exhibitB_flows)
+}
+
 get_friant_default_schedule <- function(year_type, addition_allocation, capped = FALSE, flow_cap = NULL) {
 
   year_type_index <- which(SJRDefaultFlows::flow_increase_lookup$YearType == year_type)
   flow_increase_keys <- as.matrix(SJRDefaultFlows::flow_increase_lookup[year_type_index, 3:7])[,1:5]
   days <- SJRDefaultFlows::number_of_days_lookup$`# Days`
-  default_flow_cfs <- SJRDefaultFlows::friant_exhibitB_flow_lookup[[year_type]]
-  default_flow_af <- cfs_to_af(default_flow_cfs) * days
+  exhibitB_cfs <- get_friant_flows_exhibitB(year_type)
+  exhibitB_af <- cfs_to_af(exhibitB_cfs) * days
   increase_amount <- SJRDefaultFlows::flow_increase_lookup[[year_type_index, 'IncreaseAmount']]
-  to_change <- (increase_amount > default_flow_cfs) & SJRDefaultFlows::number_of_days_lookup$Key %in% flow_increase_keys[[1]]
-  changed_af <- (cfs_to_af(increase_amount) * days - default_flow_af) * to_change
+  to_change <- (increase_amount > exhibitB_cfs) & SJRDefaultFlows::number_of_days_lookup$Key %in% flow_increase_keys[[1]]
+  changed_af <- (cfs_to_af(increase_amount) * days - exhibitB_af) * to_change
 
   flow_period1 <- ifelse(addition_allocation < to_change[1],
-                         cfs_to_af(default_flow_cfs[1]) + af_to_cfs(addition_allocation)/days[1],
-                         default_flow_cfs[1] + af_to_cfs(changed_af[1])/days[1])
-  remaining_allocation_period1 <- addition_allocation - cfs_to_af((flow_period1 - default_flow_cfs[1])) * days[1]
+                         cfs_to_af(exhibitB_cfs[1]) + af_to_cfs(addition_allocation)/days[1],
+                         exhibitB_cfs[1] + af_to_cfs(changed_af[1])/days[1])
+  remaining_allocation_period1 <- addition_allocation - cfs_to_af((flow_period1 - exhibitB_cfs[1])) * days[1]
 
   schedule_cfs <- c(flow_period1, numeric(11))
   remaining_allocation_af <- c(remaining_allocation_period1, numeric(11))
@@ -74,10 +79,10 @@ get_friant_default_schedule <- function(year_type, addition_allocation, capped =
   for (i in 2:12) {
     remain_alloc <- remaining_allocation_af[i-1]
     schedule_cfs[i] <- ifelse(remain_alloc < changed_af[i],
-                              default_flow_cfs[i] + af_to_cfs(remain_alloc)/days[i],
-                              default_flow_cfs[i] + af_to_cfs(changed_af[i])/days[i])
+                              exhibitB_cfs[i] + af_to_cfs(remain_alloc)/days[i],
+                              exhibitB_cfs[i] + af_to_cfs(changed_af[i])/days[i])
 
-    remaining_allocation_af[i] <- remain_alloc - cfs_to_af(schedule_cfs[i] - default_flow_cfs[i]) * days[i]
+    remaining_allocation_af[i] <- remain_alloc - cfs_to_af(schedule_cfs[i] - exhibitB_cfs[i]) * days[i]
   }
 
   if (capped) {
@@ -106,8 +111,8 @@ get_R2_losses <- function(gravelly_ford_flows) {
   return(sapply(gravelly_ford_flows, get_R2_loss))
 }
 
-get_mendota_dam_flows <- function(gravelly_ford_flows, gravelly_ford_losses) {
-  return(gravelly_ford_flows - gravelly_ford_losses)
+get_mendota_dam_flows <- function(gravelly_ford_flows, R2_losses) {
+  return(gravelly_ford_flows - R2_losses)
 }
 
 get_confluence_flows <- function(year_type, mendota_dam_flows) {
@@ -133,9 +138,20 @@ get_default_flow_schedule <- function(unimpaired_inflow) {
   mendota_dam_flows <- get_mendota_dam_flows(gravelly_ford_flows, gravelly_ford_losses)
   confluence_flows <- get_confluence_flows(year_type, mendota_dam_flows)
 
+  #exhibit B
+  friant_exhibitB <- get_friant_flows_exhibitB(year_type)
+  gravelly_ford_exhibitB <- get_gravelly_ford_flows(year_type, friant_exhibitB)
+  R2_losses_exhibitB <- get_R2_losses(gravelly_ford_exhibitB)
+  mendota_dam_exhibitB <- get_mendota_dam_flows(gravelly_ford_exhibitB, R2_losses_exhibitB)
+  confluence_exhibitB <- get_confluence_flows(year_type, mendota_dam_exhibitB)
+
   flows <- data.frame(
     period = SJRDefaultFlows::number_of_days_lookup$Period,
     days = SJRDefaultFlows::number_of_days_lookup$`# Days`,
+    friant_exhibitB = friant_exhibitB,
+    gravelly_ford_exhibitB = gravelly_ford_exhibitB,
+    mendota_dam_exhibitB = mendota_dam_exhibitB,
+    confluence_exhibitB = confluence_exhibitB,
     friant_release = friant_flows,
     gravelly_ford_target = gravelly_ford_flows,
     SJRRP_flows_at_gravelly_ford = gravelly_ford_flows - 5,
@@ -148,6 +164,10 @@ get_daily_default_flow_schedule <- function(default_flow_schedule, year){
 
   period <- default_flow_schedule$period
   days <- default_flow_schedule$days
+  friant_exhibitB <- default_flow_schedule$friant_exhibitB
+  gravelly_ford_exhibitB <- default_flow_schedule$gravelly_ford_exhibitB
+  mendota_dam_exhibitB <- default_flow_schedule$mendota_dam_exhibitB
+  confluence_exhibitB <- default_flow_schedule$confluence_exhibitB
   friant_release <- default_flow_schedule$friant_release
   gravelly_ford_target <- default_flow_schedule$gravelly_ford_target
   SJRRP_flows_at_gravelly_ford <- default_flow_schedule$SJRRP_flows_at_gravelly_ford
@@ -164,6 +184,10 @@ get_daily_default_flow_schedule <- function(default_flow_schedule, year){
     temp <- data.frame(
       date = seq(start_dates[i], length = days[i], by = 'day'),
       period = rep(period[i], days[i]),
+      friant_exhibitB = rep(friant_exhibitB[i], days[i]),
+      gravelly_ford_exhibitB = rep(gravelly_ford_exhibitB[i], days[i]),
+      mendota_dam_exhibitB = rep(mendota_dam_exhibitB[i], days[i]),
+      confluence_exhibitB = rep(confluence_exhibitB[i], days[i]),
       friant_release = rep(friant_release[i], days[i]),
       gravelly_ford_target = rep(gravelly_ford_target[i], days[i]),
       SJRRP_flows_at_gravelly_ford = rep(SJRRP_flows_at_gravelly_ford[i], days[i]),
@@ -171,6 +195,8 @@ get_daily_default_flow_schedule <- function(default_flow_schedule, year){
       confluence = rep(confluence[i], days[i]))
 
     daily_default_flow_schedule <- rbind(daily_default_flow_schedule, temp)
-    }
+  }
+  return(daily_default_flow_schedule)
 }
+
 
