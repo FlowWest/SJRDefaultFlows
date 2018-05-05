@@ -39,7 +39,7 @@ get_additional_allocation <- function(allocation, year_type) {
   flow_schedule_cfs <- SJRDefaultFlows::friant_exhibitB_flow_lookup[year_type]
   total_acre_feet <- sum(flow_schedule_cfs * (60 * 60 * 24 * days) / 43560)
 
-  return(allocation * 1000 - total_acre_feet)
+  return(round(allocation * 1000 - total_acre_feet))
 }
 
 # given year type reurns number of days, replaces flow increase time of year cells K5:O5
@@ -102,13 +102,31 @@ get_gravelly_ford_flows <- function(year_type, friant_flows) {
   }
 }
 
-get_R2_losses <- function(gravelly_ford_flows) {
-  get_R2_loss <- function(gravelly_ford_flow){
+get_R2_losses <- function(gravelly_ford_flows, exhibitB = FALSE) {
+  get_R2_loss <- function(gravelly_ford_flow, exB = exhibitB){
+
+    # find loss index
     loss_index <- which.min(abs(SJRDefaultFlows::R2_losses_lookup$flow - gravelly_ford_flow))
-    if(SJRDefaultFlows::R2_losses_lookup$flow[loss_index] > gravelly_ford_flow) {loss_index = loss_index - 1}
-    return(SJRDefaultFlows::R2_losses_lookup$r2_losses[loss_index])
-  }
+    if(loss_index > 1 & SJRDefaultFlows::R2_losses_lookup$flow[loss_index] > gravelly_ford_flow) {loss_index = loss_index - 1}
+
+    if (exB) {
+      return(SJRDefaultFlows::R2_losses_lookup$r2_losses[loss_index])
+    }
+
+    if (gravelly_ford_flow < 1000) {
+      if (SJRDefaultFlows::R2_losses_lookup$r2_losses[loss_index] < gravelly_ford_flow) {
+        return(SJRDefaultFlows::R2_losses_lookup$r2_losses[loss_index])
+      } else {
+        return(gravelly_ford_flow)
+      }
+    } else {
+      return(47.932 * log(gravelly_ford_flow) - 195.9)
+    }
+
+}
+
   return(sapply(gravelly_ford_flows, get_R2_loss))
+
 }
 
 get_mendota_dam_flows <- function(gravelly_ford_flows, R2_losses) {
@@ -122,8 +140,6 @@ get_confluence_flows <- function(year_type, mendota_dam_flows) {
     return(mendota_dam_flows + SJRDefaultFlows::exhibitB_diversions_lookup$mud_ss_gains_crit_yrs)
   }
 }
-
-unimpaired_inflow <- 1270 # cell D3
 
 get_default_flow_schedule <- function(unimpaired_inflow) {
   allocation_lookup <- get_allocation_lookup(unimpaired_inflow)
@@ -141,7 +157,7 @@ get_default_flow_schedule <- function(unimpaired_inflow) {
   #exhibit B
   friant_exhibitB <- get_friant_flows_exhibitB(year_type)
   gravelly_ford_exhibitB <- get_gravelly_ford_flows(year_type, friant_exhibitB)
-  R2_losses_exhibitB <- get_R2_losses(gravelly_ford_exhibitB)
+  R2_losses_exhibitB <- get_R2_losses(gravelly_ford_exhibitB, exhibitB = TRUE)
   mendota_dam_exhibitB <- get_mendota_dam_flows(gravelly_ford_exhibitB, R2_losses_exhibitB)
   confluence_exhibitB <- get_confluence_flows(year_type, mendota_dam_exhibitB)
 
