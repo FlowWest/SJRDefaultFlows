@@ -3,21 +3,21 @@ library(testthat)
 context('Default Flow Schedule')
 
 test_that('Check CH year type default flow schedule', {
-  ch <- SJRDefaultFlows::ch
+  ch <- read.csv('ch.csv', stringsAsFactors = FALSE)
   unimpaired_inflow <- 400
   default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
   expect_equal(ch, default_flow_schedule, tolerance = 0.01)
 })
 
 test_that('Check N-D year type default flow schedule', {
-  nd <- SJRDefaultFlows::nd
+  nd <- read.csv('n-d.csv', stringsAsFactors = FALSE)
   unimpaired_inflow <- 1270
   default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
   expect_equal(nd, default_flow_schedule, tolerance = 0.01)
 })
 
 test_that('Check N-W year type default flow schedule', {
-  nw <- SJRDefaultFlows::nw
+  nw <- read.csv('n-w.csv', stringsAsFactors = FALSE)
   unimpaired_inflow <- 2501
   default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
   expect_equal(nw, default_flow_schedule, tolerance = 0.01)
