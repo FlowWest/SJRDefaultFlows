@@ -61,14 +61,14 @@ get_friant_default_schedule <- function(year_type, addition_allocation, capped =
 
   year_type_index <- which(SJRDefaultFlows::flow_increase_lookup$YearType == year_type)
   flow_increase_keys <- as.matrix(SJRDefaultFlows::flow_increase_lookup[year_type_index, 3:7])[,1:5]
-  flow_increase_keys <- ifelse(all(is.na(flow_increase_keys)), 0, flow_increase_keys)
+  if (all(is.na(flow_increase_keys))) {flow_increase_keys <- 0}
   days <- SJRDefaultFlows::number_of_days_lookup$`# Days`
   exhibitB_cfs <- get_friant_flows_exhibitB(year_type)
   exhibitB_af <- cfs_to_af(exhibitB_cfs) * days
   increase_amount <- SJRDefaultFlows::flow_increase_lookup[[year_type_index, 'IncreaseAmount']]
   increase_amount <- ifelse(is.na(increase_amount), 0, increase_amount)
 
-  to_change <- (increase_amount > exhibitB_cfs) & SJRDefaultFlows::number_of_days_lookup$Key %in% flow_increase_keys[[1]]
+  to_change <- (increase_amount > exhibitB_cfs) & SJRDefaultFlows::number_of_days_lookup$Key %in% flow_increase_keys
   changed_af <- (cfs_to_af(increase_amount) * days - exhibitB_af) * to_change
 
   flow_period1 <- ifelse(addition_allocation < to_change[1],

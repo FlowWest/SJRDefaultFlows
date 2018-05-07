@@ -13,24 +13,31 @@ test_that('Check CH year type default flow schedule', {
   ch <- read.csv('ch.csv', stringsAsFactors = FALSE)
   unimpaired_inflow <- 400
   default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
-  expect_equal(ch, default_flow_schedule, tolerance = 0.01)
+  expect_equal(ch, default_flow_schedule, tolerance = 0.05)
+})
+
+test_that('Check CH-4 year type default flow schedule', {
+  ch4 <- read.csv('ch4.csv', stringsAsFactors = FALSE)
+  unimpaired_inflow <- 670
+  default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
+  expect_equal(ch4, default_flow_schedule, tolerance = 0.05)
 })
 
 test_that('Check N-D year type default flow schedule', {
   nd <- read.csv('n-d.csv', stringsAsFactors = FALSE)
   unimpaired_inflow <- 1270
   default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
-  expect_equal(nd, default_flow_schedule, tolerance = 0.01)
+  expect_equal(nd, default_flow_schedule, tolerance = 0.05)
 })
 
 test_that('Check N-W year type default flow schedule', {
   nw <- read.csv('n-w.csv', stringsAsFactors = FALSE)
   unimpaired_inflow <- 2501
   default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
-  expect_equal(nw, default_flow_schedule, tolerance = 0.01)
+  expect_equal(nw, default_flow_schedule, tolerance = 0.05)
 })
 
-# (unimpaired_inflow <- 0)
+# (unimpaired_inflow <- 670)
 # (allocation_lookup <- get_allocation_lookup(unimpaired_inflow))
 # (allocation <- get_allocation(unimpaired_inflow, allocation_lookup))
 # (year_type <- get_year_type(allocation))
@@ -52,4 +59,4 @@ test_that('Check N-W year type default flow schedule', {
 # (confluence_flows <- get_confluence_flows(year_type, mendota_dam_flows))
 # default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
 # daily_default_flow_schedule <- get_daily_default_flow_schedule(default_flow_schedule, year = 2000)
-#
+
