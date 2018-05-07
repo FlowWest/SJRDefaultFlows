@@ -6,7 +6,7 @@ test_that('Check CL year type default flow schedule', {
   ch <- read.csv('cl.csv', stringsAsFactors = FALSE)
   unimpaired_inflow <- 0
   default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
-  expect_equal(ch, default_flow_schedule, tolerance = 0.01)
+  expect_equal(ch, default_flow_schedule, tolerance = 0.05)
 })
 
 test_that('Check CH year type default flow schedule', {
@@ -21,6 +21,13 @@ test_that('Check CH-4 year type default flow schedule', {
   unimpaired_inflow <- 670
   default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
   expect_equal(ch4, default_flow_schedule, tolerance = 0.05)
+})
+
+test_that('Check CL year type default flow schedule', {
+  dry <- read.csv('dry.csv', stringsAsFactors = FALSE)
+  unimpaired_inflow <- 930
+  default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
+  expect_equal(dry, default_flow_schedule, tolerance = 0.05)
 })
 
 test_that('Check N-D year type default flow schedule', {
