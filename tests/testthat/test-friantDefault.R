@@ -23,6 +23,20 @@ test_that('Check CH-4 year type default flow schedule', {
   expect_equal(ch4, default_flow_schedule, tolerance = 0.05)
 })
 
+test_that('Check CH-5 year type default flow schedule', {
+  ch5 <- read.csv('ch5.csv', stringsAsFactors = FALSE)
+  unimpaired_inflow <- 700
+  default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
+  expect_equal(ch5, default_flow_schedule, tolerance = 0.05)
+})
+
+test_that('Check CH-6 year type default flow schedule', {
+  ch6 <- read.csv('ch6.csv', stringsAsFactors = FALSE)
+  unimpaired_inflow <- 750
+  default_flow_schedule <- get_default_flow_schedule(unimpaired_inflow)
+  expect_equal(ch6, default_flow_schedule, tolerance = 0.05)
+})
+
 test_that('Check CL year type default flow schedule', {
   dry <- read.csv('dry.csv', stringsAsFactors = FALSE)
   unimpaired_inflow <- 930
