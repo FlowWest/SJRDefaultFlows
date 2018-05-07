@@ -96,13 +96,18 @@ get_friant_default_schedule <- function(year_type, addition_allocation, capped =
 
 }
 
-get_gravelly_ford_flows <- function(year_type, friant_flows) {
-
+get_diversions <- function(year_type) {
   if(year_type %in% c('Wet', 'N-W', 'N-D', 'Dry')) {
-    return(friant_flows - SJRDefaultFlows::exhibitB_diversions_lookup$divers_R1)
+    return(SJRDefaultFlows::exhibitB_diversions_lookup$divers_R1)
   } else {
-    return(friant_flows - SJRDefaultFlows::exhibitB_diversions_lookup$divers_R1_crit_yrs)
+    return(SJRDefaultFlows::exhibitB_diversions_lookup$divers_R1_crit_yrs)
   }
+}
+
+get_gravelly_ford_flows <- function(year_type, friant_flows, diversions) {
+
+  return(friant_flows - diversions)
+
 }
 
 get_R2_losses <- function(gravelly_ford_flows, exhibitB = FALSE) {
@@ -152,14 +157,15 @@ get_default_flow_schedule <- function(unimpaired_inflow) {
   addition_allocation <- get_additional_allocation(allocation, year_type) #cell K3
   number_of_days <- get_number_of_days(year_type) # cell I4
   friant_flows <- get_friant_default_schedule(year_type, addition_allocation)
-  gravelly_ford_flows <- get_gravelly_ford_flows(year_type, friant_flows)
+  diversions <- get_diversions(year_type)
+  gravelly_ford_flows <- get_gravelly_ford_flows(year_type, friant_flows, diversions)
   gravelly_ford_losses <- get_R2_losses(gravelly_ford_flows)
   mendota_dam_flows <- get_mendota_dam_flows(gravelly_ford_flows, gravelly_ford_losses)
   confluence_flows <- get_confluence_flows(year_type, mendota_dam_flows)
 
   #exhibit B
   friant_exhibitB <- get_friant_flows_exhibitB(year_type)
-  gravelly_ford_exhibitB <- get_gravelly_ford_flows(year_type, friant_exhibitB)
+  gravelly_ford_exhibitB <- get_gravelly_ford_flows(year_type, friant_exhibitB, diversions)
   R2_losses_exhibitB <- get_R2_losses(gravelly_ford_exhibitB, exhibitB = TRUE)
   mendota_dam_exhibitB <- get_mendota_dam_flows(gravelly_ford_exhibitB, R2_losses_exhibitB)
   confluence_exhibitB <- get_confluence_flows(year_type, mendota_dam_exhibitB)
@@ -194,7 +200,7 @@ get_daily_default_flow_schedule <- function(default_flow_schedule, year){
   confluence <- default_flow_schedule$confluence
   start_month_days <- unlist(strsplit(period, ' - '))[c(TRUE, FALSE)]
   start_month_days[7] <- 'Sep 1'
-  year <- year
+  year <- c(rep(year, 11), year + 1)
   start_dates <- as.Date(paste(year, start_month_days), format = '%Y %b %d')
 
   daily_default_flow_schedule <- data.frame()
