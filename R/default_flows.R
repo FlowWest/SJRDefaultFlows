@@ -10,8 +10,9 @@ get_allocation_lookup <- function(unimpaired_inflow) {
 }
 
 # given unimpaired inflow return allocation
-get_allocation <- function(unimpaired_inflow, allocation_lookup) {
+get_allocation <- function(unimpaired_inflow) {
 
+  allocation_lookup <- get_allocation_lookup(unimpaired_inflow)
   flow_index <- which.min(abs(allocation_lookup$uiTAF - unimpaired_inflow))
   flow_index <- ifelse(allocation_lookup$uiTAF[flow_index] > unimpaired_inflow,
                        flow_index - 1, flow_index)
@@ -149,11 +150,11 @@ get_confluence_flows <- function(year_type, mendota_dam_flows) {
   }
 }
 
-get_default_flow_schedule <- function(unimpaired_inflow) {
-  allocation_lookup <- get_allocation_lookup(unimpaired_inflow)
-  allocation <- get_allocation(unimpaired_inflow, allocation_lookup) # cell C4
+
+get_default_flow_schedule <- function(allocation) {
+
   year_type <- get_year_type(allocation) # cell C5
-  restoration_af <- get_restoration_AF(unimpaired_inflow, allocation) # cell E5
+  # restoration_af <- get_restoration_AF(unimpaired_inflow, allocation) # cell E5
   addition_allocation <- get_additional_allocation(allocation, year_type) #cell K3
   number_of_days <- get_number_of_days(year_type) # cell I4
   friant_flows <- get_friant_default_schedule(year_type, addition_allocation)
