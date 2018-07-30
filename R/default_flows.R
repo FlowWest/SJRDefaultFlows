@@ -62,14 +62,14 @@ get_friant_default_schedule <- function(year_type, addition_allocation, capped =
 
   year_type_index <- which(SJRDefaultFlows::flow_increase_lookup$YearType == year_type)
   flow_increase_keys <- as.matrix(SJRDefaultFlows::flow_increase_lookup[year_type_index, 3:7])[,1:5]
-  flow_increase_keys <- ifelse(all(is.na(flow_increase_keys)), 0, flow_increase_keys)
+  if (all(is.na(flow_increase_keys))) {flow_increase_keys <- 0}
   days <- SJRDefaultFlows::number_of_days_lookup$`# Days`
   exhibitB_cfs <- get_friant_flows_exhibitB(year_type)
   exhibitB_af <- cfs_to_af(exhibitB_cfs) * days
   increase_amount <- SJRDefaultFlows::flow_increase_lookup[[year_type_index, 'IncreaseAmount']]
   increase_amount <- ifelse(is.na(increase_amount), 0, increase_amount)
 
-  to_change <- (increase_amount > exhibitB_cfs) & SJRDefaultFlows::number_of_days_lookup$Key %in% flow_increase_keys[[1]]
+  to_change <- (increase_amount > exhibitB_cfs) & SJRDefaultFlows::number_of_days_lookup$Key %in% flow_increase_keys
   changed_af <- (cfs_to_af(increase_amount) * days - exhibitB_af) * to_change
 
   flow_period1 <- ifelse(addition_allocation < to_change[1],
@@ -142,6 +142,11 @@ get_mendota_dam_flows <- function(gravelly_ford_flows, R2_losses) {
   return(gravelly_ford_flows - R2_losses)
 }
 
+# TODO is this correct?
+get_sac_dam_flows <- function(mendota_dam_flows) {
+  return((mendota_dam_flows - 10) * .95)
+}
+
 get_confluence_flows <- function(year_type, mendota_dam_flows) {
   if(year_type %in% c('Wet', 'N-W', 'N-D', 'Dry')) {
     return(mendota_dam_flows + SJRDefaultFlows::exhibitB_diversions_lookup$mud_ss_gains)
@@ -163,6 +168,7 @@ get_default_flow_schedule <- function(allocation) {
   gravelly_ford_losses <- get_R2_losses(gravelly_ford_flows)
   mendota_dam_flows <- get_mendota_dam_flows(gravelly_ford_flows, gravelly_ford_losses)
   confluence_flows <- get_confluence_flows(year_type, mendota_dam_flows)
+  sac_dam_flows <- get_sac_dam_flows(mendota_dam_flows)
 
   #exhibit B
   friant_exhibitB <- get_friant_flows_exhibitB(year_type)
@@ -182,7 +188,8 @@ get_default_flow_schedule <- function(allocation) {
     gravelly_ford_target = gravelly_ford_flows,
     SJRRP_flows_at_gravelly_ford = gravelly_ford_flows - 5,
     mendota_dam = mendota_dam_flows,
-    confluence = confluence_flows, stringsAsFactors = FALSE)
+    confluence = confluence_flows,
+    sac_dam = sac_dam_flows, stringsAsFactors = FALSE)
 
 }
 
@@ -199,6 +206,7 @@ get_daily_default_flow_schedule <- function(default_flow_schedule, year){
   SJRRP_flows_at_gravelly_ford <- default_flow_schedule$SJRRP_flows_at_gravelly_ford
   mendota_dam <- default_flow_schedule$mendota_dam
   confluence <- default_flow_schedule$confluence
+  sac_dam <- default_flow_schedule$sac_dam
   start_month_days <- unlist(strsplit(period, ' - '))[c(TRUE, FALSE)]
   start_month_days[7] <- 'Sep 1'
   year <- c(rep(year, 11), year + 1)
@@ -218,7 +226,8 @@ get_daily_default_flow_schedule <- function(default_flow_schedule, year){
       gravelly_ford_target = rep(gravelly_ford_target[i], days[i]),
       SJRRP_flows_at_gravelly_ford = rep(SJRRP_flows_at_gravelly_ford[i], days[i]),
       mendota_dam = rep(mendota_dam[i], days[i]),
-      confluence = rep(confluence[i], days[i]))
+      confluence = rep(confluence[i], days[i]),
+      sac_dam = rep(sac_dam[i], days[i]))
 
     daily_default_flow_schedule <- rbind(daily_default_flow_schedule, temp)
   }
