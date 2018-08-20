@@ -143,7 +143,7 @@ get_mendota_dam_flows <- function(gravelly_ford_flows, R2_losses) {
 }
 
 # TODO is this correct?
-get_sac_dam_flows <- function(mendota_dam_flows) {
+get_sack_dam_flows <- function(mendota_dam_flows) {
   return((mendota_dam_flows - 10) * .95)
 }
 
@@ -168,7 +168,7 @@ get_default_flow_schedule <- function(allocation) {
   gravelly_ford_losses <- get_R2_losses(gravelly_ford_flows)
   mendota_dam_flows <- get_mendota_dam_flows(gravelly_ford_flows, gravelly_ford_losses)
   confluence_flows <- get_confluence_flows(year_type, mendota_dam_flows)
-  sac_dam_flows <- get_sac_dam_flows(mendota_dam_flows)
+  sack_dam_flows <- get_sack_dam_flows(mendota_dam_flows)
 
   #exhibit B
   friant_exhibitB <- get_friant_flows_exhibitB(year_type)
@@ -189,7 +189,7 @@ get_default_flow_schedule <- function(allocation) {
     SJRRP_flows_at_gravelly_ford = gravelly_ford_flows - 5,
     mendota_dam = mendota_dam_flows,
     confluence = confluence_flows,
-    sac_dam = sac_dam_flows, stringsAsFactors = FALSE)
+    sack_dam = sack_dam_flows, stringsAsFactors = FALSE)
 
 }
 
@@ -206,7 +206,7 @@ get_daily_default_flow_schedule <- function(default_flow_schedule, year){
   SJRRP_flows_at_gravelly_ford <- default_flow_schedule$SJRRP_flows_at_gravelly_ford
   mendota_dam <- default_flow_schedule$mendota_dam
   confluence <- default_flow_schedule$confluence
-  sac_dam <- default_flow_schedule$sac_dam
+  sack_dam <- default_flow_schedule$sack_dam
   start_month_days <- unlist(strsplit(period, ' - '))[c(TRUE, FALSE)]
   start_month_days[7] <- 'Sep 1'
   year <- c(rep(year, 11), year + 1)
@@ -227,7 +227,7 @@ get_daily_default_flow_schedule <- function(default_flow_schedule, year){
       SJRRP_flows_at_gravelly_ford = rep(SJRRP_flows_at_gravelly_ford[i], days[i]),
       mendota_dam = rep(mendota_dam[i], days[i]),
       confluence = rep(confluence[i], days[i]),
-      sac_dam = rep(sac_dam[i], days[i]))
+      sack_dam = rep(sack_dam[i], days[i]))
 
     daily_default_flow_schedule <- rbind(daily_default_flow_schedule, temp)
   }
